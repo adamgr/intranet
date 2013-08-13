@@ -64,6 +64,8 @@ class BaseView(View):
             return self.get()
         elif self.request.method == 'POST':
             return self.post()
+        elif self.request.method == 'PUT':
+            return self.put()
         else:
             raise HTTPNotFound()
 
@@ -77,6 +79,9 @@ class BaseView(View):
         raise HTTPNotFound()
 
     def post(self):
+        raise HTTPNotFound()
+        
+    def put(self):
         raise HTTPNotFound()
 
 
