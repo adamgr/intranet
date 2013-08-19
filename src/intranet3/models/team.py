@@ -12,8 +12,18 @@ class Team(Base):
     name = Column(String(255), unique=True, nullable=False)
     team_members = orm.relationship('TeamMember', backref='team', lazy='dynamic')
     
+    @property
+    def users(self):
+        return [tm.user_id for tm in self.team_members]
+    
     def to_dict(self):
-        return {'id': self.id, 'name': self.name}
+        team_dict = {
+            'id': self.id,
+            'name': self.name,
+            'users': self.users
+            }
+            
+        return team_dict
     
     
 class TeamMember(Base):

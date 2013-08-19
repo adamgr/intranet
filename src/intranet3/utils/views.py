@@ -1,7 +1,8 @@
 import datetime
 import calendar
+import json
 
-from pyramid.httpexceptions import HTTPBadRequest, HTTPForbidden, HTTPNotFound
+from pyramid.httpexceptions import HTTPException, HTTPBadRequest, HTTPForbidden, HTTPMethodNotAllowed, HTTPNotFound
 
 from intranet3 import models
 from pyramid.i18n import TranslationStringFactory, get_localizer
@@ -64,8 +65,6 @@ class BaseView(View):
             return self.get()
         elif self.request.method == 'POST':
             return self.post()
-        elif self.request.method == 'PUT':
-            return self.put()
         else:
             raise HTTPNotFound()
 
@@ -80,10 +79,41 @@ class BaseView(View):
 
     def post(self):
         raise HTTPNotFound()
-        
-    def put(self):
-        raise HTTPNotFound()
+    
 
+class ApiView(BaseView):
+
+    http_method_names = ['get', 'post', 'put', 'patch', 'delete', 'head', 'options', 'trace']
+
+    def __init__(self, context, request):
+        def _response_exception(request, response):
+            try:
+                e = response.exception
+            except AttributeError:
+                return response
+
+            if isinstance(e, HTTPException):
+                response.content_type = "application/json"
+                response.body = json.dumps({'message': e.message})
+
+            return response
+        request.add_response_callback(_response_exception)
+        
+        super(ApiView, self).__init__(context, request)
+
+        self.flash = lambda message, klass='': None # We don't need flash messages. So do nothing
+
+    def dispatch(self):       
+        if self.request.method.lower() in self.http_method_names:
+            handler = getattr(self, self.request.method.lower(), self.http_not_allowed_method)
+        else:
+            handler = self.http_not_allowed_method
+
+        return handler()
+
+    def http_not_allowed_method(self):
+        raise HTTPMethodNotAllowed("Method Not Allowed")
+        
 
 class CronView(View):
     def __call__(self):
